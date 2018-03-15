@@ -61,7 +61,7 @@ def update(frame_number):
     rain_drops['growth'][current_index] = np.random.uniform(50, 200)
 
     # Update the scatter collection, with the new colors, sizes and positions.
-    scat.set_edgecolors(rain_drops['color'])
+    scat.set_edgecolor(rain_drops['color'])
     scat.set_sizes(rain_drops['size'])
     scat.set_offsets(rain_drops['position'])
 

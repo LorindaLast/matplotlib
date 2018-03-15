@@ -15,6 +15,8 @@ import warnings
 
 import six
 from six.moves import zip
+
+from numbers import Number
 try:
     from math import gcd
 except ImportError:
@@ -370,7 +372,7 @@ class Collection(artist.Artist, cm.ScalarMappable):
 
         pickradius = (
             float(self._picker)
-            if cbook.is_numlike(self._picker) and
+            if isinstance(self._picker, Number) and
                self._picker is not True  # the bool, not just nonzero or 1
             else self._pickradius)
 
@@ -687,7 +689,7 @@ class Collection(artist.Artist, cm.ScalarMappable):
                 self._is_filled = False
         except AttributeError:
             pass
-        self._facecolors = mcolors.to_rgba_array(c, self._alpha)
+        self._facecolor = mcolors.to_rgba_array(c, self._alpha)
         self.stale = True
 
     def set_facecolor(self, c):
@@ -704,21 +706,21 @@ class Collection(artist.Artist, cm.ScalarMappable):
         self._original_facecolor = c
         self._set_facecolor(c)
 
-    def set_facecolors(self, c):
-        """alias for set_facecolor"""
-        return self.set_facecolor(c)
+    # def set_facecolor(self, c):
+    #     """alias for set_facecolor"""
+    #     return self.set_facecolor(c)
 
     def get_facecolor(self):
-        return self._facecolors
-    get_facecolors = get_facecolor
+        return self._facecolor
+    # get_facecolor = get_facecolor
 
     def get_edgecolor(self):
-        if (isinstance(self._edgecolors, six.string_types)
-                   and self._edgecolors == str('face')):
-            return self.get_facecolors()
+        if (isinstance(self._edgecolor, six.string_types)
+                   and self._edgecolor == str('face')):
+            return self.get_facecolor()
         else:
-            return self._edgecolors
-    get_edgecolors = get_edgecolor
+            return self._edgecolor
+    # get_edgecolor = get_edgecolor
 
     def _set_edgecolor(self, c):
         set_hatch_color = True
@@ -739,13 +741,13 @@ class Collection(artist.Artist, cm.ScalarMappable):
 
         try:
             if c.lower() == 'face':   # Special case: lookup in "get" method.
-                self._edgecolors = 'face'
+                self._edgecolor = 'face'
                 return
         except AttributeError:
             pass
-        self._edgecolors = mcolors.to_rgba_array(c, self._alpha)
-        if set_hatch_color and len(self._edgecolors):
-            self._hatch_color = tuple(self._edgecolors[0])
+        self._edgecolor = mcolors.to_rgba_array(c, self._alpha)
+        if set_hatch_color and len(self._edgecolor):
+            self._hatch_color = tuple(self._edgecolor[0])
         self.stale = True
 
     def set_edgecolor(self, c):
@@ -764,9 +766,9 @@ class Collection(artist.Artist, cm.ScalarMappable):
         self._original_edgecolor = c
         self._set_edgecolor(c)
 
-    def set_edgecolors(self, c):
-        """alias for set_edgecolor"""
-        return self.set_edgecolor(c)
+    # def set_edgecolor(self, c):
+    #     """alias for set_edgecolor"""
+    #     return self.set_edgecolor(c)
 
     def set_alpha(self, alpha):
         """
@@ -805,9 +807,9 @@ class Collection(artist.Artist, cm.ScalarMappable):
         if not self.check_update("array"):
             return
         if self._is_filled:
-            self._facecolors = self.to_rgba(self._A, self._alpha)
+            self._facecolor = self.to_rgba(self._A, self._alpha)
         elif self._is_stroked:
-            self._edgecolors = self.to_rgba(self._A, self._alpha)
+            self._edgecolor = self.to_rgba(self._A, self._alpha)
         self.stale = True
 
     def get_fill(self):
@@ -820,9 +822,9 @@ class Collection(artist.Artist, cm.ScalarMappable):
         artist.Artist.update_from(self, other)
         self._antialiaseds = other._antialiaseds
         self._original_edgecolor = other._original_edgecolor
-        self._edgecolors = other._edgecolors
+        self._edgecolor = other._edgecolor
         self._original_facecolor = other._original_facecolor
-        self._facecolors = other._facecolors
+        self._facecolor = other._facecolor
         self._linewidths = other._linewidths
         self._linestyles = other._linestyles
         self._us_linestyles = other._us_linestyles
@@ -1317,7 +1319,7 @@ class LineCollection(Collection):
         self.stale = True
 
     def get_color(self):
-        return self._edgecolors
+        return self._edgecolor
 
     get_colors = get_color  # for compatibility with old versions
 
@@ -1779,11 +1781,9 @@ class TriMesh(Collection):
 
         This function is primarily of use to backend implementers.
         """
-        Path = mpath.Path
         triangles = tri.get_masked_triangles()
-        verts = np.concatenate((tri.x[triangles][..., np.newaxis],
-                                tri.y[triangles][..., np.newaxis]), axis=2)
-        return [Path(x) for x in verts]
+        verts = np.stack((tri.x[triangles], tri.y[triangles]), axis=-1)
+        return [mpath.Path(x) for x in verts]
 
     @artist.allow_rasterization
     def draw(self, renderer):
@@ -1796,11 +1796,10 @@ class TriMesh(Collection):
         tri = self._triangulation
         triangles = tri.get_masked_triangles()
 
-        verts = np.concatenate((tri.x[triangles][..., np.newaxis],
-                                tri.y[triangles][..., np.newaxis]), axis=2)
+        verts = np.stack((tri.x[triangles], tri.y[triangles]), axis=-1)
 
         self.update_scalarmappable()
-        colors = self._facecolors[triangles]
+        colors = self._facecolor[triangles]
 
         gc = renderer.new_gc()
         self._set_gc_clip(gc)
@@ -1878,22 +1877,19 @@ class QuadMesh(Collection):
 
         This function is primarily of use to backend implementers.
         """
-        Path = mpath.Path
-
         if isinstance(coordinates, np.ma.MaskedArray):
             c = coordinates.data
         else:
             c = coordinates
-
         points = np.concatenate((
-                    c[0:-1, 0:-1],
-                    c[0:-1, 1:],
+                    c[:-1, :-1],
+                    c[:-1, 1:],
                     c[1:, 1:],
-                    c[1:, 0:-1],
-                    c[0:-1, 0:-1]
+                    c[1:, :-1],
+                    c[:-1, :-1]
                 ), axis=2)
         points = points.reshape((meshWidth * meshHeight, 5, 2))
-        return [Path(x) for x in points]
+        return [mpath.Path(x) for x in points]
 
     def convert_mesh_to_triangles(self, meshWidth, meshHeight, coordinates):
         """
@@ -1979,7 +1975,7 @@ class QuadMesh(Collection):
             renderer.draw_quad_mesh(
                 gc, transform.frozen(), self._meshWidth, self._meshHeight,
                 coordinates, offsets, transOffset, self.get_facecolor(),
-                self._antialiased, self.get_edgecolors())
+                self._antialiased, self.get_edgecolor())
         gc.restore()
         renderer.close_group(self.__class__.__name__)
         self.stale = False

@@ -51,7 +51,7 @@ class SelectFromCollection(object):
         self.Npts = len(self.xys)
 
         # Ensure that we have separate colors for each object
-        self.fc = collection.get_facecolors()
+        self.fc = collection.get_facecolor()
         if len(self.fc) == 0:
             raise ValueError('Collection must have a facecolor')
         elif len(self.fc) == 1:
@@ -65,13 +65,13 @@ class SelectFromCollection(object):
         self.ind = np.nonzero(path.contains_points(self.xys))[0]
         self.fc[:, -1] = self.alpha_other
         self.fc[self.ind, -1] = 1
-        self.collection.set_facecolors(self.fc)
+        self.collection.set_facecolor(self.fc)
         self.canvas.draw_idle()
 
     def disconnect(self):
         self.lasso.disconnect_events()
         self.fc[:, -1] = 1
-        self.collection.set_facecolors(self.fc)
+        self.collection.set_facecolor(self.fc)
         self.canvas.draw_idle()
 
 

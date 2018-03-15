@@ -18,7 +18,6 @@ import numpy as np
 
 from matplotlib import (
     artist, cbook, colors as mcolors, lines, text as mtext, path as mpath)
-from matplotlib.cbook import _backports
 from matplotlib.collections import (
     Collection, LineCollection, PolyCollection, PatchCollection,
     PathCollection)
@@ -135,6 +134,22 @@ class Line3D(lines.Line2D):
         lines.Line2D.draw(self, renderer)
         self.stale = False
 
+    def set_3d_data(self, *args):
+        """
+        Set the x and y data
+
+        ACCEPTS: 3D array (rows are x, y, z) or three 1D arrays
+        """
+        if len(args) == 1:
+            x, y, z= args[0]
+        else:
+            x, y, z = args
+
+        self._verts3d = x, y, z
+    
+    def get_3d_data(self):
+        return self._verts3d
+
 
 def line_2d_to_3d(line, zs=0, zdir='z'):
     '''
@@ -147,7 +162,7 @@ def line_2d_to_3d(line, zs=0, zdir='z'):
 def path_to_3d_segment(path, zs=0, zdir='z'):
     '''Convert a path to a 3D segment.'''
 
-    zs = _backports.broadcast_to(zs, len(path))
+    zs = np.broadcast_to(zs, len(path))
     pathsegs = path.iter_segments(simplify=False, curves=False)
     seg = [(x, y, z) for (((x, y), code), z) in zip(pathsegs, zs)]
     seg3d = [juggle_axes(x, y, z, zdir) for (x, y, z) in seg]
@@ -159,7 +174,7 @@ def paths_to_3d_segments(paths, zs=0, zdir='z'):
     Convert paths from a collection object to 3D segments.
     '''
 
-    zs = _backports.broadcast_to(zs, len(paths))
+    zs = np.broadcast_to(zs, len(paths))
     segs = [path_to_3d_segment(path, pathz, zdir)
             for path, pathz in zip(paths, zs)]
     return segs
@@ -168,7 +183,7 @@ def paths_to_3d_segments(paths, zs=0, zdir='z'):
 def path_to_3d_segment_with_codes(path, zs=0, zdir='z'):
     '''Convert a path to a 3D segment with path codes.'''
 
-    zs = _backports.broadcast_to(zs, len(path))
+    zs = np.broadcast_to(zs, len(path))
     seg = []
     codes = []
     pathsegs = path.iter_segments(simplify=False, curves=False)
@@ -184,7 +199,7 @@ def paths_to_3d_segments_with_codes(paths, zs=0, zdir='z'):
     Convert paths from a collection object to 3D segments with path codes.
     '''
 
-    zs = _backports.broadcast_to(zs, len(paths))
+    zs = np.broadcast_to(zs, len(paths))
     segments = []
     codes_list = []
     for path, pathz in zip(paths, zs):
@@ -258,16 +273,16 @@ class Patch3D(Patch):
         self.set_3d_properties(zs, zdir)
 
     def set_3d_properties(self, verts, zs=0, zdir='z'):
-        zs = _backports.broadcast_to(zs, len(verts))
+        zs = np.broadcast_to(zs, len(verts))
         self._segment3d = [juggle_axes(x, y, z, zdir)
                            for ((x, y), z) in zip(verts, zs)]
-        self._facecolor3d = Patch.get_facecolor(self)
+        self._facecolor = Patch.get_facecolor(self)
 
     def get_path(self):
         return self._path2d
 
     def get_facecolor(self):
-        return self._facecolor2d
+        return self._facecolor
 
     def do_3d_projection(self, renderer):
         s = self._segment3d
@@ -275,7 +290,7 @@ class Patch3D(Patch):
         vxs, vys, vzs, vis = proj3d.proj_transform_clip(xs, ys, zs, renderer.M)
         self._path2d = mpath.Path(np.column_stack([vxs, vys]))
         # FIXME: coloring
-        self._facecolor2d = self._facecolor3d
+        self._facecolor = self._facecolor
         return min(vzs)
 
     def draw(self, renderer):
@@ -303,7 +318,7 @@ class PathPatch3D(Patch3D):
         vxs, vys, vzs, vis = proj3d.proj_transform_clip(xs, ys, zs, renderer.M)
         self._path2d = mpath.Path(np.column_stack([vxs, vys]), self._code3d)
         # FIXME: coloring
-        self._facecolor2d = self._facecolor3d
+        self._facecolor = self._facecolor
         return min(vzs)
 
 
@@ -368,7 +383,7 @@ class Patch3DCollection(PatchCollection):
         self.stale = True
 
     def set_3d_properties(self, zs, zdir):
-        # Force the collection to initialize the face and edgecolors
+        # Force the collection to initialize the face and edgecolor
         # just in case it is a scalarmappable with a colormap.
         self.update_scalarmappable()
         offsets = self.get_offsets()
@@ -378,23 +393,23 @@ class Patch3DCollection(PatchCollection):
             xs = []
             ys = []
         self._offsets3d = juggle_axes(xs, ys, np.atleast_1d(zs), zdir)
-        self._facecolor3d = self.get_facecolor()
-        self._edgecolor3d = self.get_edgecolor()
+        self._facecolor = self.get_facecolor()
+        self._edgecolor = self.get_edgecolor()
         self.stale = True
 
     def do_3d_projection(self, renderer):
         xs, ys, zs = self._offsets3d
         vxs, vys, vzs, vis = proj3d.proj_transform_clip(xs, ys, zs, renderer.M)
 
-        fcs = (zalpha(self._facecolor3d, vzs) if self._depthshade else
-               self._facecolor3d)
+        fcs = (zalpha(self._facecolor, vzs) if self._depthshade else
+               self._facecolor)
         fcs = mcolors.to_rgba_array(fcs, self._alpha)
-        self.set_facecolors(fcs)
+        self.set_facecolor(fcs)
 
-        ecs = (zalpha(self._edgecolor3d, vzs) if self._depthshade else
-               self._edgecolor3d)
+        ecs = (zalpha(self._edgecolor, vzs) if self._depthshade else
+               self._edgecolor)
         ecs = mcolors.to_rgba_array(ecs, self._alpha)
-        self.set_edgecolors(ecs)
+        self.set_edgecolor(ecs)
         PatchCollection.set_offsets(self, np.column_stack([vxs, vys]))
 
         if vzs.size > 0:
@@ -436,7 +451,7 @@ class Path3DCollection(PathCollection):
         self.stale = True
 
     def set_3d_properties(self, zs, zdir):
-        # Force the collection to initialize the face and edgecolors
+        # Force the collection to initialize the face and edgecolor
         # just in case it is a scalarmappable with a colormap.
         self.update_scalarmappable()
         offsets = self.get_offsets()
@@ -446,23 +461,23 @@ class Path3DCollection(PathCollection):
             xs = []
             ys = []
         self._offsets3d = juggle_axes(xs, ys, np.atleast_1d(zs), zdir)
-        self._facecolor3d = self.get_facecolor()
-        self._edgecolor3d = self.get_edgecolor()
+        self._facecolor = self.get_facecolor()
+        self._edgecolor = self.get_edgecolor()
         self.stale = True
 
     def do_3d_projection(self, renderer):
         xs, ys, zs = self._offsets3d
         vxs, vys, vzs, vis = proj3d.proj_transform_clip(xs, ys, zs, renderer.M)
 
-        fcs = (zalpha(self._facecolor3d, vzs) if self._depthshade else
-               self._facecolor3d)
+        fcs = (zalpha(self._facecolor, vzs) if self._depthshade else
+               self._facecolor)
         fcs = mcolors.to_rgba_array(fcs, self._alpha)
-        self.set_facecolors(fcs)
+        self.set_facecolor(fcs)
 
-        ecs = (zalpha(self._edgecolor3d, vzs) if self._depthshade else
-               self._edgecolor3d)
+        ecs = (zalpha(self._edgecolor, vzs) if self._depthshade else
+               self._edgecolor)
         ecs = mcolors.to_rgba_array(ecs, self._alpha)
-        self.set_edgecolors(ecs)
+        self.set_edgecolor(ecs)
         PathCollection.set_offsets(self, np.column_stack([vxs, vys]))
 
         if vzs.size > 0 :
@@ -511,8 +526,8 @@ class Poly3DCollection(PolyCollection):
         Keyword arguments:
         zsort, see set_zsort for options.
 
-        Note that this class does a bit of magic with the _facecolors
-        and _edgecolors properties.
+        Note that this class does a bit of magic with the _facecolor
+        and _edgecolor properties.
         '''
         zsort = kwargs.pop('zsort', True)
         PolyCollection.__init__(self, verts, *args, **kwargs)
@@ -586,13 +601,13 @@ class Poly3DCollection(PolyCollection):
         self._codes3d = codes
 
     def set_3d_properties(self):
-        # Force the collection to initialize the face and edgecolors
+        # Force the collection to initialize the face and edgecolor
         # just in case it is a scalarmappable with a colormap.
         self.update_scalarmappable()
         self._sort_zpos = None
         self.set_zsort(True)
-        self._facecolors3d = PolyCollection.get_facecolors(self)
-        self._edgecolors3d = PolyCollection.get_edgecolors(self)
+        self._facecolor = PolyCollection.get_facecolor(self)
+        self._edgecolor = PolyCollection.get_edgecolor(self)
         self._alpha3d = PolyCollection.get_alpha(self)
         self.stale = True
 
@@ -608,15 +623,15 @@ class Poly3DCollection(PolyCollection):
         # FIXME: This may no longer be needed?
         if self._A is not None:
             self.update_scalarmappable()
-            self._facecolors3d = self._facecolors
+            self._facecolor = self._facecolor
 
         txs, tys, tzs = proj3d.proj_transform_vec(self._vec, renderer.M)
         xyzlist = [(txs[si:ei], tys[si:ei], tzs[si:ei])
                    for si, ei in self._segis]
 
         # This extra fuss is to re-order face / edge colors
-        cface = self._facecolors3d
-        cedge = self._edgecolors3d
+        cface = self._facecolor
+        cedge = self._edgecolor
         if len(cface) != len(xyzlist):
             cface = cface.repeat(len(xyzlist), axis=0)
         if len(cedge) != len(xyzlist):
@@ -642,11 +657,11 @@ class Poly3DCollection(PolyCollection):
         else:
             PolyCollection.set_verts(self, segments_2d, self._closed)
 
-        self._facecolors2d = [fc for z, s, fc, ec, idx in z_segments_2d]
-        if len(self._edgecolors3d) == len(cface):
-            self._edgecolors2d = [ec for z, s, fc, ec, idx in z_segments_2d]
+        self._facecolor = [fc for z, s, fc, ec, idx in z_segments_2d]
+        if len(self._edgecolor) == len(cface):
+            self._edgecolor = [ec for z, s, fc, ec, idx in z_segments_2d]
         else:
-            self._edgecolors2d = self._edgecolors3d
+            self._edgecolor = self._edgecolor
 
         # Return zorder value
         if self._sort_zpos is not None:
@@ -663,13 +678,13 @@ class Poly3DCollection(PolyCollection):
 
     def set_facecolor(self, colors):
         PolyCollection.set_facecolor(self, colors)
-        self._facecolors3d = PolyCollection.get_facecolor(self)
-    set_facecolors = set_facecolor
+        self._facecolor = PolyCollection.get_facecolor(self)
+    # set_facecolor = set_facecolor
 
     def set_edgecolor(self, colors):
         PolyCollection.set_edgecolor(self, colors)
-        self._edgecolors3d = PolyCollection.get_edgecolor(self)
-    set_edgecolors = set_edgecolor
+        self._edgecolor = PolyCollection.get_edgecolor(self)
+    # set_edgecolor = set_edgecolor
 
     def set_alpha(self, alpha):
         """
@@ -685,24 +700,24 @@ class Poly3DCollection(PolyCollection):
                 raise TypeError('alpha must be a float or None')
         artist.Artist.set_alpha(self, alpha)
         try:
-            self._facecolors = mcolors.to_rgba_array(
-                self._facecolors3d, self._alpha)
+            self._facecolor = mcolors.to_rgba_array(
+                self._facecolor, self._alpha)
         except (AttributeError, TypeError, IndexError):
             pass
         try:
-            self._edgecolors = mcolors.to_rgba_array(
-                    self._edgecolors3d, self._alpha)
+            self._edgecolor = mcolors.to_rgba_array(
+                    self._edgecolor, self._alpha)
         except (AttributeError, TypeError, IndexError):
             pass
         self.stale = True
 
-    def get_facecolors(self):
-        return self._facecolors2d
-    get_facecolor = get_facecolors
+    def get_facecolor(self):
+        return self._facecolor
+    # get_facecolor = get_facecolor
 
-    def get_edgecolors(self):
-        return self._edgecolors2d
-    get_edgecolor = get_edgecolors
+    def get_edgecolor(self):
+        return self._edgecolor
+    # get_edgecolor = get_edgecolor
 
     def draw(self, renderer):
         return Collection.draw(self, renderer)
@@ -753,9 +768,9 @@ def rotate_axes(xs, ys, zs, zdir):
         return xs, ys, zs
 
 
-def get_colors(c, num):
+def get_color(c, num):
     """Stretch the color argument to provide the required number num"""
-    return _backports.broadcast_to(
+    return np.broadcast_to(
         mcolors.to_rgba_array(c) if len(c) else [0, 0, 0, 0],
         (num, 4))
 
@@ -766,7 +781,7 @@ def zalpha(colors, zs):
     #        in all three dimensions. Otherwise, at certain orientations,
     #        the min and max zs are very close together.
     #        Should really normalize against the viewing depth.
-    colors = get_colors(colors, len(zs))
+    colors = get_color(colors, len(zs))
     if len(zs):
         norm = Normalize(min(zs), max(zs))
         sats = 1 - norm(zs) * 0.7

@@ -1891,6 +1891,7 @@ class _AxesBase(martist.Artist):
         self._set_artist_props(collection)
 
         if collection.get_clip_path() is None:
+            
             collection.set_clip_path(self.patch)
 
         if autolim:

@@ -346,6 +346,7 @@ class Legend(Artist):
                  bbox_transform=None,  # transform for the bbox
                  frameon=None,  # draw frame
                  handler_map=None,
+                 matchtextcolor = None,
                  ):
         """
 
@@ -713,6 +714,14 @@ class Legend(Artist):
         self.set_title(title)
         self._last_fontsize_points = self._fontsize
         self._draggable = None
+
+        if matchtextcolor:
+            texts = self.get_texts()
+            lines = self.get_lines()
+            i = 0
+            for text in texts:
+                text.set_color(lines[i].get_color())
+                i+=1
 
     def _set_artist_props(self, a):
         """

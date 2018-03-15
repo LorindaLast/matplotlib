@@ -225,7 +225,8 @@ def streamplot(axes, x, y, u, v, density=1, linewidth=None, color=None,
     axes.add_collection(lc)
     axes.autoscale_view()
 
-    ac = matplotlib.collections.PatchCollection(arrows)
+    #ac = mcollections.PatchCollection(arrows)
+    ac = FancyArrowCollection(arrows)
     stream_container = StreamplotSet(lc, ac)
     return stream_container
 
@@ -236,6 +237,20 @@ class StreamplotSet(object):
         self.lines = lines
         self.arrows = arrows
 
+class FancyArrowCollection(object):
+    
+    def __init__(self, arrows):
+        self.arrows = arrows
+    
+    def __getattr__(self, attrname, *arg):
+        def _arrow_method(*arg):
+            for arrow in self.arrows:
+                func = getattr(arrow, attrname, *arg)
+                func(*arg)
+        if attrname in dir(self.arrows[0]):
+            return _arrow_method
+        else:
+            raise NameError    
 
 # Coordinate definitions
 # ========================

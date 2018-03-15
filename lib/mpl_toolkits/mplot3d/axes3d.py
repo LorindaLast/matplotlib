@@ -1737,8 +1737,8 @@ class Axes3D(Axes):
         if fcolors is not None:
             if shade:
                 colset = self._shade_colors(colset, normals)
-            polyc.set_facecolors(colset)
-            polyc.set_edgecolors(colset)
+            polyc.set_facecolor(colset)
+            polyc.set_edgecolor(colset)
         elif cmap:
             colset = np.array(colset)
             polyc.set_array(colset)
@@ -1751,7 +1751,7 @@ class Axes3D(Axes):
                 colset = self._shade_colors(color, normals)
             else:
                 colset = color
-            polyc.set_facecolors(colset)
+            polyc.set_facecolor(colset)
 
         self.add_collection(polyc)
         self.auto_scale_xyz(X, Y, Z, had_data)
@@ -2024,7 +2024,7 @@ class Axes3D(Axes):
                 colset = self._shade_colors(color, normals)
             else:
                 colset = color
-            polyc.set_facecolors(colset)
+            polyc.set_facecolor(colset)
 
         self.add_collection(polyc)
         self.auto_scale_xyz(tri.x, tri.y, z, had_data)

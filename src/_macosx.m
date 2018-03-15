@@ -1709,7 +1709,7 @@ NavigationToolbar2_init(NavigationToolbar2 *self, PyObject *args, PyObject *kwds
     [self->handler installCallbacks: actions forButtons: buttons];
 
     NSFont* font = [NSFont systemFontOfSize: 0.0];
-    rect.size.width = 300;
+    rect.size.width = 2400;
     rect.size.height = 0;
     rect.origin.x += height;
     NSText* messagebox = [[NSText alloc] initWithFrame: rect];

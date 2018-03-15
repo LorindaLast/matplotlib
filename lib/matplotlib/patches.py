@@ -176,6 +176,11 @@ class Patch(artist.Artist):
         # getters/setters, so we just copy them directly.
         self._edgecolor = other._edgecolor
         self._facecolor = other._facecolor
+
+        # Add two more properties
+        self._original_edgecolor = other._original_edgecolor
+        self._original_facecolor = other._original_facecolor
+
         self._fill = other._fill
         self._hatch = other._hatch
         self._hatch_color = other._hatch_color

@@ -3439,7 +3439,7 @@ def test_mixed_collection():
     p2 = collections.PatchCollection([c], match_original=True)
     p2.set_offsets([[48, 0], [-32, -16]])
     p2.set_linewidths([1, 5])
-    p2.set_edgecolors([[0, 0, 0.1, 1.0], [0, 0, 0.1, 0.5]])
+    p2.set_edgecolor([[0, 0, 0.1, 1.0], [0, 0, 0.1, 0.5]])
 
     ax.patch.set_color('0.5')
     ax.add_collection(p1)
@@ -5411,25 +5411,25 @@ def test_fillbetween_cycle():
     for j in range(3):
         cc = ax.fill_between(range(3), range(3))
         target = mcolors.to_rgba('C{}'.format(j))
-        assert tuple(cc.get_facecolors().squeeze()) == tuple(target)
+        assert tuple(cc.get_facecolor().squeeze()) == tuple(target)
 
     for j in range(3, 6):
         cc = ax.fill_betweenx(range(3), range(3))
         target = mcolors.to_rgba('C{}'.format(j))
-        assert tuple(cc.get_facecolors().squeeze()) == tuple(target)
+        assert tuple(cc.get_facecolor().squeeze()) == tuple(target)
 
     target = mcolors.to_rgba('k')
 
     for al in ['facecolor', 'facecolors', 'color']:
         cc = ax.fill_between(range(3), range(3), **{al: 'k'})
-        assert tuple(cc.get_facecolors().squeeze()) == tuple(target)
+        assert tuple(cc.get_facecolor().squeeze()) == tuple(target)
 
     edge_target = mcolors.to_rgba('k')
     for j, el in enumerate(['edgecolor', 'edgecolors'], start=6):
         cc = ax.fill_between(range(3), range(3), **{el: 'k'})
         face_target = mcolors.to_rgba('C{}'.format(j))
-        assert tuple(cc.get_facecolors().squeeze()) == tuple(face_target)
-        assert tuple(cc.get_edgecolors().squeeze()) == tuple(edge_target)
+        assert tuple(cc.get_facecolor().squeeze()) == tuple(face_target)
+        assert tuple(cc.get_edgecolor().squeeze()) == tuple(edge_target)
 
 
 def test_log_margins():
@@ -5465,8 +5465,8 @@ def test_scatter_color_masking():
     linewidths = np.array([1, 2, 3])
     s = plt.scatter(x, y, color=colors, linewidths=linewidths)
 
-    facecolors = s.get_facecolors()
-    linecolors = s.get_edgecolors()
+    facecolors = s.get_facecolor()
+    linecolors = s.get_edgecolor()
     linewidths = s.get_linewidths()
     assert_array_equal(facecolors[1], np.array([0, 0, 0, 1]))
     assert_array_equal(linecolors[1], np.array([0, 0, 0, 1]))
