@@ -718,10 +718,11 @@ class Legend(Artist):
         if matchtextcolor:
             texts = self.get_texts()
             lines = self.get_lines()
-            i = 0
-            for text in texts:
-                text.set_color(lines[i].get_color())
-                i+=1
+            if (texts != []) and (len(texts) == len(lines)):
+                i = 0
+                for text in texts:
+                    text.set_color(lines[i].get_color())
+                    i+=1
 
     def _set_artist_props(self, a):
         """
