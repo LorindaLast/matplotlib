@@ -2125,6 +2125,7 @@ class Axes(_AxesBase):
             (lambda left, height, width=0.8, bottom=None, **kwargs:
              (True, left, height, width, bottom, kwargs)),
         ]
+        
         exps = []
         for matcher in matchers:
             try:
@@ -2151,7 +2152,7 @@ class Axes(_AxesBase):
             color = self._get_patches_for_fill.get_next_color()
         edgecolor = kwargs.pop('edgecolor', None)
         linewidth = kwargs.pop('linewidth', None)
-
+        
         # Because xerr and yerr will be passed to errorbar,
         # most dimension checking and processing will be left
         # to the errorbar method.
@@ -2193,6 +2194,7 @@ class Axes(_AxesBase):
             np.atleast_1d(x), height, width, y, linewidth)
 
         if orientation == 'vertical':
+            
             self._process_unit_info(xdata=x, ydata=height, kwargs=kwargs)
             if log:
                 self.set_yscale('log', nonposy='clip')
@@ -2249,10 +2251,21 @@ class Axes(_AxesBase):
             bottom = y
         else:
             raise ValueError('invalid alignment: %s' % align)
-
+        
+        total = kwargs.pop("total", [])
+        p = kwargs.pop("percentage", 100)
         patches = []
-        args = zip(left, bottom, width, height, color, edgecolor, linewidth)
-        for l, b, w, h, c, e, lw in args:
+        if total == []:
+            for i in left:
+                total += [p]
+        args = zip(left, bottom, width, height, color, edgecolor, linewidth, total)
+        for l, b, w, h, c, e, lw, t in args:
+            if orientation == "vertical":
+                b = b * p / t
+                h = h * p / t
+            if orientation == "horizontal":
+                l = l * p / t
+                w = w * p / t
             r = mpatches.Rectangle(
                 xy=(l, b), width=w, height=h,
                 facecolor=c,
