@@ -3,10 +3,15 @@ from __future__ import (absolute_import, division, print_function,
 
 import six
 
+from numbers import Number
+
 import matplotlib.axes as maxes
-import matplotlib.cbook as cbook
 import matplotlib.ticker as ticker
 from matplotlib.gridspec import SubplotSpec
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import rcParams
 
 from .axes_divider import Size, SubplotDivider, LocatableAxes, Divider
 from .colorbar import Colorbar
@@ -115,10 +120,10 @@ class CbarAxes(CbarAxesBase, LocatableAxes):
         self._default_label_on = True
         self.locator = None
 
-        super(LocatableAxes, self).__init__(*kl, **kwargs)
+        super().__init__(*kl, **kwargs)
 
     def cla(self):
-        super(LocatableAxes, self).cla()
+        super().cla()
         self._config_axes()
 
 
@@ -208,7 +213,7 @@ class Grid(object):
 
         h = []
         v = []
-        if isinstance(rect, six.string_types) or cbook.is_numlike(rect):
+        if isinstance(rect, (str, Number)):
             self._divider = SubplotDivider(fig, rect, horizontal=h, vertical=v,
                                            aspect=False)
         elif isinstance(rect, SubplotSpec):
@@ -529,7 +534,7 @@ class ImageGrid(Grid):
 
         h = []
         v = []
-        if isinstance(rect, six.string_types) or cbook.is_numlike(rect):
+        if isinstance(rect, (str, Number)):
             self._divider = SubplotDivider(fig, rect, horizontal=h, vertical=v,
                                            aspect=aspect)
         elif isinstance(rect, SubplotSpec):
@@ -767,5 +772,105 @@ class ImageGrid(Grid):
         self._divider.set_vertical(v)
 
 
-AxesGrid = ImageGrid
+def breakAxis(fig=None, xbound=None, ybound=None, d=.015, tilt=45, *args, **kwargs):
+	if fig is None:
+		fig = plt.gcf()
+	if xbound is not None:
+		width_ratios = []
+		for x in xbound:
+			wide = x[1] - x[0]
+			width_ratios.append(wide)
+	else:
+		width_ratios = [1]
+	if ybound is not None:
+		height_ratios = []
+		for y in ybound[::-1]:
+			height = y[1] - y[0]
+			height_ratios.append(height)
+	else:
+		height_ratios = [1]
+	ncols = len(width_ratios)
+	nrows = len(height_ratios)
 
+	kwargs.update(ncols=ncols, nrows=nrows, height_ratios=height_ratios,
+                  width_ratios=width_ratios)
+	grids = gridspec.GridSpec(*args, **kwargs)
+	subplot = plt.Subplot(fig, gridspec.GridSpec(1, 1)[0])
+	for spine in subplot.spines.values():
+		spine.set_visible(False)
+	subplot.set_xticks([])
+	subplot.set_yticks([])
+	subplot.patch.set_facecolor('none')
+	axs = []
+	for g in grids:
+		spax = plt.Subplot(fig, g)
+		fig.add_subplot(spax)
+		axs.append(spax)
+	fig.add_subplot(subplot)
+	for i, spax in enumerate(axs):
+		if ybound is not None:
+			spax.set_ylim(ybound[::-1][i//ncols])
+		if xbound is not None:
+			spax.set_xlim(xbound[i % ncols])
+	for ax in axs:
+		ax.xaxis.tick_bottom()
+		ax.yaxis.tick_left()
+		if not ax.is_last_row():
+			ax.spines['bottom'].set_visible(False)
+			plt.setp(ax.xaxis.get_minorticklabels(), visible=False)
+			plt.setp(ax.xaxis.get_minorticklines(), visible=False)
+			plt.setp(ax.xaxis.get_majorticklabels(), visible=False)
+			plt.setp(ax.xaxis.get_majorticklines(), visible=False)
+			ax.spines['top'].set_visible(False)
+			ax.spines['right'].set_visible(False)
+		else:
+			xbase = max(ax.xaxis.get_ticklocs()[1] - ax.xaxis.get_ticklocs()[0]
+                        for ax in axs if ax.is_last_row())
+			ax.xaxis.set_major_locator(ticker.MultipleLocator(xbase))
+		if not ax.is_first_col():
+			ax.spines['left'].set_visible(False)
+			plt.setp(ax.yaxis.get_minorticklabels(), visible=False)
+			plt.setp(ax.yaxis.get_minorticklines(), visible=False)
+			plt.setp(ax.yaxis.get_majorticklabels(), visible=False)
+			plt.setp(ax.yaxis.get_majorticklines(), visible=False)
+			ax.spines['right'].set_visible(False)
+			ax.spines['top'].set_visible(False)
+		else:
+			ax.spines['right'].set_visible(False)
+			ax.spines['top'].set_visible(False)
+			ybase = max(ax.yaxis.get_ticklocs()[1] - ax.yaxis.get_ticklocs()[0]
+                        for ax in axs if ax.is_first_col())
+			ax.yaxis.set_major_locator(ticker.MultipleLocator(ybase))
+	if d:
+		size = fig.get_size_inches()
+		ylen = d * np.sin(tilt * np.pi / 180) * size[0] / size[1]
+		xlen = d * np.cos(tilt * np.pi / 180)
+		d_kwargs = dict(transform=fig.transFigure, color='k',
+			    clip_on=False, lw=rcParams['axes.linewidth'])
+		ds = []
+		for ax in axs:
+			bounds = ax.get_position().bounds
+			if ax.is_last_row():
+				ypos = bounds[1]
+				if not ax.is_last_col():
+					xpos = bounds[0] + bounds[2]
+					ds += ax.plot((xpos - xlen, xpos + xlen), (ypos - ylen, ypos + ylen),
+				      **d_kwargs)
+				if not ax.is_first_col():
+					xpos = bounds[0]
+					ds += ax.plot((xpos - xlen, xpos + xlen), (ypos - ylen, ypos + ylen),
+				      **d_kwargs)
+			if ax.is_first_col():
+				xpos = bounds[0]
+				if not ax.is_first_row():
+					ypos = bounds[1] + bounds[3]
+					ds += ax.plot((xpos - xlen, xpos + xlen), (ypos - ylen, ypos + ylen),
+				      **d_kwargs)
+				if not ax.is_last_row():
+					ypos = bounds[1]
+					ds += ax.plot((xpos - xlen, xpos + xlen), (ypos - ylen, ypos + ylen),
+				      **d_kwargs)
+	return axs
+
+
+AxesGrid = ImageGrid
