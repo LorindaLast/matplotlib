@@ -715,14 +715,24 @@ class Legend(Artist):
         self._last_fontsize_points = self._fontsize
         self._draggable = None
 
+        # Option to set text color to be same as artists
         if matchtextcolor:
             texts = self.get_texts()
-            lines = self.get_lines()
-            if (texts != []) and (len(texts) == len(lines)):
-                i = 0
-                for text in texts:
-                    text.set_color(lines[i].get_color())
-                    i+=1
+            i = 0
+            for text in texts:
+                if isinstance(self.legendHandles[i], Line2D):
+                    print("Line2D")
+                    text.set_color(self.legendHandles[i].get_color())
+                elif isinstance(self.legendHandles[i], Patch):
+                    print("Patch")
+                    text.set_color(self.legendHandles[i].get_facecolor())
+                elif isinstance(self.legendHandles[i], RegularPolyCollection):
+                    print("RegularPolyCollection")
+                    text.set_color(self.legendHandles[i].get_facecolor()[0])
+                elif isinstance(self.legendHandles[i], CircleCollection):
+                    print("CircleCollection")
+                    text.set_color(self.legendHandles[i].get_facecolor()[0])
+                i+=1
 
     def _set_artist_props(self, a):
         """
