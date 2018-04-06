@@ -618,7 +618,8 @@ class FigureManagerQT(FigureManagerBase):
             self.window.show()
             self.canvas.draw_idle()
 
-        self.window.raise_()
+        if matplotlib.rcParams['figure.raise']:
+            self.window.raise_()
 
     def full_screen_toggle(self):
         if self.window.isFullScreen():
@@ -662,8 +663,9 @@ class FigureManagerQT(FigureManagerBase):
 
     def show(self):
         self.window.show()
-        self.window.activateWindow()
-        self.window.raise_()
+        if matplotlib.rcParams['figure.raise']:
+            self.window.activateWindow()
+            self.window.raise_()
 
     def destroy(self, *args):
         # check for qApp first, as PySide deletes it in its atexit handler

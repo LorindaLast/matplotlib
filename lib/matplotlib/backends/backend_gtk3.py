@@ -405,7 +405,8 @@ class FigureManagerGTK3(FigureManagerBase):
     def show(self):
         # show the figure window
         self.window.show()
-        self.window.present()
+        if rcParams['figure.raise']:
+            self.window.present()
 
     def full_screen_toggle(self):
         self._full_screen_flag = not self._full_screen_flag
@@ -843,7 +844,8 @@ class ConfigureSubplotsGTK3(backend_tools.ConfigureSubplotsBase, Gtk.Window):
 
     def trigger(self, sender, event, data=None):
         self.init_window()
-        self.window.present()
+        if rcParams['figure.raise']:
+            self.window.present()
 
 
 # Define the file to use as the GTk icon

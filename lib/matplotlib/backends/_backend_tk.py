@@ -549,8 +549,9 @@ class FigureManagerTk(FigureManagerBase):
         else:
             self.canvas.draw_idle()
         # Raise the new window.
-        self.canvas.manager.window.attributes('-topmost', 1)
-        self.canvas.manager.window.attributes('-topmost', 0)
+        if matplotlib.rcParams['figure.raise']:
+            self.canvas.manager.window.attributes('-topmost', 1)
+            self.canvas.manager.window.attributes('-topmost', 0)
         self._shown = True
 
     def destroy(self, *args):
