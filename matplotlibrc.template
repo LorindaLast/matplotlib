@@ -449,6 +449,7 @@ backend      : $TEMPLATE_BACKEND
                                  # expressed as a fraction of the average axis width
 #figure.subplot.hspace  : 0.2    # the amount of height reserved for space between subplots,
                                  # expressed as a fraction of the average axis height
+#figure.raise	: True		##  raise plot window to top of stack.
 
 
 ### IMAGES
